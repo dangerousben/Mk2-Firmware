@@ -54,6 +54,7 @@
 #include "BadgeNotifications.h"
 #include "GUITask.h"
 #include "IMUTask.h"
+#include "SerialButtonsTask.h"
 #include <glcd.h>
 
 TiLDATask::TiLDATask() {
@@ -79,6 +80,8 @@ void TiLDATask::task() {
     RadioTransmitTask* radioTransmitTask = new RadioTransmitTask(*radioReceiveTask, *settingsStore, *messageCheckTask);
     AppOpenerTask* appOpenerTask = new AppOpenerTask(*Tilda::_appManager);
     Tilda::_lcdTask = new LCDTask;
+    SerialButtonsTask serialButtonsTask;
+
     GLCD.SetRotation(ROTATION_90);
     Tilda::_badgeNotifications = new BadgeNotifications(*settingsStore, *messageCheckTask, *Tilda::_appManager);
     Tilda::_guiTask = new GUITask;
@@ -96,6 +99,7 @@ void TiLDATask::task() {
     appOpenerTask->start();
     PMIC.start();
     imuTask.start();
+    serialButtonsTask.start();
 
     Tilda::openApp(HomeScreenApp::New);
 
