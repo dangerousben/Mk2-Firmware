@@ -34,28 +34,68 @@
 #include <Arduino.h>
 #include <FreeRTOS_ARM.h>
 #include <rtc_clock.h>
+#include "Task.h"
 #include "EMF2014Config.h"
 #include "ButtonSubscription.h"
 #include "RGBTask.h"
 #include "AppManager.h"
+#include "LCDTask.h"
+#include "GUITask.h"
+#include "SettingsStore.h"
+#include "BatterySaverTask.h"
+#include "RadioReceiveTask.h"
 
+class BadgeNotifications;
+class DataStore;
+
+enum Orientation_t{
+    ORIENTATION_HELD,
+    ORIENTATION_RIGHT,  // joystick to the right of the screen
+    ORIENTATION_HUNG,
+    ORIENTATION_LEFT   // joystick to the left of the screen,
+};
 
 class Tilda {
+    friend class TiLDATask;
+    friend class IMUTask;
+
 public:
-    static ButtonSubscription createButtonSubscription(uint16_t buttons);
+    // access to things
+    static RTC_clock& getClock();
+    static BadgeNotifications& getBadgeNotifications();
+    static DataStore& getDataStore();
+    static LCDTask& getLCDTask();
+    static GUITask& getGUITask();
+    static SettingsStore& getSettingsStore();
+    static AppManager& getAppManager();
+
+    // helpers
+    static ButtonSubscription* createButtonSubscription(uint16_t buttons);
     static void log(String text);
     static void delay(uint16_t durationInMs);
     static void setLedColor(RGBLed led, RGBColor color);
     static void setLedColor(RGBColor color);
-    static void openApp(String name);
-    static RTC_clock* getClock();
-
-    // This is not part of the actual API
-    static void setupTasks(AppManager* appManager, RGBTask* rgbTask, RTC_clock* realTimeClock);
+    static void openApp(app_ctor aNew);
+    static float getBatteryVoltage();
+    static uint8_t getBatteryPercent();
+    static uint8_t getChargeState();
+    static Orientation_t getOrientation();
+    static uint32_t millisecondsSinceBoot();
+    static void markActivity();
+    static char* radioChannelIdentifier();
+    static uint8_t radioRssi();
 private:
     Tilda();
 
     static RGBTask* _rgbTask;
     static AppManager* _appManager;
     static RTC_clock* _realTimeClock;
+    static BadgeNotifications* _badgeNotifications;
+    static DataStore* _dataStore;
+    static LCDTask* _lcdTask;
+    static GUITask* _guiTask;
+    static SettingsStore* _settingsStore;
+    static BatterySaverTask* _batterySaverTask;
+    static RadioReceiveTask* _radioReceiveTask;
 };
+

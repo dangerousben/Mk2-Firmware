@@ -256,6 +256,8 @@ static const uint8_t CAN1TX = 107;
 #define LCD_CS                BOARD_SPI_SS2
 #define LCD_POWER             (40u)
 #define LCD_BACKLIGHT         (33u)
+#define LCD_BACKLIGHT_ON      LOW
+#define LCD_BACKLIGHT_OFF     HIGH
 #define LCD_A0                (38u)
 #define LCD_RESET             (34u)
 
@@ -322,6 +324,7 @@ static const uint8_t CAN1TX = 107;
     
 //Piezo
 #define PIEZO                 (66u)
+#define PIEZO_PWM             (111u)
 
 #ifdef __cplusplus
 }

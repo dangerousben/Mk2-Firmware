@@ -27,7 +27,7 @@
  */
 
 #include "ButtonSubscription.h"
-#include "DebugTask.h"
+#include <debug.h>
 #include <FreeRTOS_ARM.h>
 #include "TiLDAButtonInterrupts.h"
 #include "EMF2014Config.h"
@@ -39,6 +39,7 @@ ButtonSubscription::ButtonSubscription() {
 }
 
 ButtonSubscription::~ButtonSubscription() {
+    removeQueue(mQueue);
     vQueueDelete(mQueue);
 }
 
@@ -61,4 +62,9 @@ Button ButtonSubscription::waitForPress() {
 
 void ButtonSubscription::clear() {
     xQueueReset(mQueue);
+}
+
+void ButtonSubscription::wake() {
+  Button button = NONE;
+  xQueueOverwrite(mQueue,&button);
 }

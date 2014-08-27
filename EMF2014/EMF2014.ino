@@ -37,81 +37,48 @@
 
 // Reference all libraries that are used here, otherwise Arduino won't include them :(
 #include <FreeRTOS_ARM.h>
+#include <debug.h>
+#include <Wire.h>
+#include <MPU6050.h>
 #include <Sha1.h>
 #include <DueFlashStorage.h>
 #include <TinyPacks.h>
 #include <rtc_clock.h>
 #include <uECC.h>
+#include <SPI.h>
+#include <glcd.h>
+#include <M2tk.h>
 #include <Arduino.h>
 
-// These are the includes actually needed for this file:
-#include "EMF2014Config.h"
-#include "DebugTask.h"
-#include "RGBTask.h"
-#include "ButtonTask.h"
-#include "RadioTask.h"
-#include "MessageCheckTask.h"
-#include "AppOpenerTask.h"
-#include "AppManager.h"
-#include "FlashLightApp.h"
-#include "HomeScreenApp.h"
+#include "TiLDATask.h"
 #include "TiLDAButtonInterrupts.h"
-#include "Tilda.h"
-#include "SettingsStore.h"
 
-/*
- * Setup is the main entry point for an Arduino sketch.
- * Here is where we will do a lot of work in getting the system running
- * and in FreeRTOS we will start the scheduler
- */
-
-RTC_clock realTimeClock(RC);
-SettingsStore settingsStore;
-AppManager appManager;
-
-DebugTask debugTask;
-RGBTask rgbTask;
-ButtonTask buttonTask;
-MessageCheckTask messageCheckTask;
-RadioTask radioTask(messageCheckTask, realTimeClock);
-AppOpenerTask appOpenerTask(appManager);
-
-FlashLightApp flashLightApp;
-HomeScreenApp homeScreenApp;
+// All setup of tasks is now done within the TilDATask
+TiLDATask tiLDATask;
 
 void setup() {
-    debug::setup();
-    Tilda::setupTasks(&appManager, &rgbTask, &realTimeClock);
+    randomSeed(analogRead(RANDOM_SEED_PIN));
 
-    // Uncomment this if you want to see serial output during startup
-    // This will require you to send a character over serial before unblocking
-    // the startup
-
-    debug::waitForKey();
-
-    realTimeClock.init();
+    // Setup radio communitcation
+    RADIO_SERIAL.begin(RADIO_SERIAL_BAUD);
+    // Setup radio pins
+    pinMode(SRF_AT_COMMAND, OUTPUT);
+    pinMode(SRF_SLEEP, OUTPUT);
 
     tildaButtonSetup();
     tildaButtonAttachInterrupts();
     tildaButtonInterruptPriority();
 
-    // Background tasks
-    debugTask.start();
-    rgbTask.start();
-    buttonTask.start();
-    messageCheckTask.start();
-    radioTask.start();
-    appOpenerTask.start();
+    debug::setup();
+    // Uncomment this if you want to see serial output during startup
+    // This will require you to send a character over serial before unblocking
+    // the startup
+    debug::waitForKey();
 
-    // Applications
-    appManager.add(homeScreenApp);
-    appManager.add(flashLightApp);
+    tiLDATask.start();
 
-    // Boot into home screen
-    Tilda::openApp("HomeScreen");
-
-    // Start scheduler
     debug::log("Start Scheduler");
+    // Start scheduler
     vTaskStartScheduler();
 
     debug::log("Insufficient RAM");

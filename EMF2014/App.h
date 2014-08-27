@@ -37,13 +37,10 @@
 
 class App: public Task {
 public:
-	App(): running(false) {};
-	void start();
-	void suspend();
-    virtual String getName() const = 0;
+    virtual bool keepAlive() const;
+    virtual void newOrientation(uint8_t);
+
 protected:
-    virtual void task()=0;
-    virtual void afterSuspension()=0;
-    virtual void beforeResume()=0;
-    bool running;
+    App();
+    App(const App&);
 };

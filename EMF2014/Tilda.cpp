@@ -28,19 +28,30 @@
 
 #include "Tilda.h"
 #include <FreeRTOS_ARM.h>
-#include "DebugTask.h"
+#include <debug.h>
 #include "RGBTask.h"
 #include "AppManager.h"
+#include "PMICTask.h"
+#include "LCDTask.h"
+#include "GUITask.h"
+#include "IMUTask.h"
 
-RGBTask *Tilda::_rgbTask = NULL;
-AppManager *Tilda::_appManager = NULL;
-RTC_clock *Tilda::_realTimeClock = NULL;
+RGBTask* Tilda::_rgbTask = NULL;
+AppManager* Tilda::_appManager = NULL;
+RTC_clock* Tilda::_realTimeClock = NULL;
+BadgeNotifications* Tilda::_badgeNotifications = NULL;
+DataStore* Tilda::_dataStore = NULL;
+LCDTask* Tilda::_lcdTask = NULL;
+GUITask* Tilda::_guiTask = NULL;
+SettingsStore* Tilda::_settingsStore = NULL;
+BatterySaverTask* Tilda::_batterySaverTask = NULL;
+RadioReceiveTask* Tilda::_radioReceiveTask = NULL;
 
 Tilda::Tilda() {}
 
-ButtonSubscription Tilda::createButtonSubscription(uint16_t buttons) {
-    ButtonSubscription result;
-    result.addButtons(LIGHT | A | B | UP | DOWN | LEFT | RIGHT | CENTER);
+ButtonSubscription* Tilda::createButtonSubscription(uint16_t buttons) {
+    ButtonSubscription* result = new ButtonSubscription;
+    result->addButtons(buttons);
     return result;
 }
 
@@ -68,18 +79,68 @@ void Tilda::setLedColor(RGBColor color) {
     }
 }
 
-void Tilda::openApp(String name) {
+void Tilda::openApp(app_ctor aNew) {
     if (_appManager) {
-        _appManager->open(name);
+        _appManager->open(aNew);
     }
 }
 
-RTC_clock* Tilda::getClock() {
-    return _realTimeClock;
+RTC_clock& Tilda::getClock() {
+    return *_realTimeClock;
 }
 
-void Tilda::setupTasks(AppManager* appManager, RGBTask* rgbTask, RTC_clock* realTimeClock) {
-    _appManager = appManager;
-    _rgbTask = rgbTask;
-    _realTimeClock = realTimeClock;
+BadgeNotifications& Tilda::getBadgeNotifications() {
+    return *_badgeNotifications;
+}
+
+DataStore& Tilda::getDataStore() {
+    return *_dataStore;
+}
+
+LCDTask& Tilda::getLCDTask() {
+    return *_lcdTask;
+}
+
+GUITask& Tilda::getGUITask() {
+    return *_guiTask;
+}
+
+SettingsStore& Tilda::getSettingsStore() {
+    return *_settingsStore;
+}
+
+AppManager& Tilda::getAppManager() {
+    return *_appManager;
+}
+
+float Tilda::getBatteryVoltage() {
+    return PMIC.getBatteryVoltage();
+}
+
+uint8_t Tilda::getBatteryPercent() {
+    return PMIC.getBatteryPercent();
+}
+
+uint8_t Tilda::getChargeState() {
+    return PMIC.getChargeState();
+}
+
+Orientation_t Tilda::getOrientation() {
+    return (Orientation_t)imuTask.getOrientation();
+}
+
+uint32_t Tilda::millisecondsSinceBoot() {
+    return xTaskGetTickCount();
+}
+
+void Tilda::markActivity() {
+    _batterySaverTask->markActivity();
+}
+
+char* Tilda::radioChannelIdentifier() {
+    return _radioReceiveTask->channelIdentifier();
+}
+
+uint8_t Tilda::radioRssi() {
+    return _radioReceiveTask->rssi();
 }

@@ -28,53 +28,66 @@
 #include "FlashLightApp.h"
 
 #include <FreeRTOS_ARM.h>
+#include <debug.h>
 
 #include "ButtonSubscription.h"
-#include "DebugTask.h"
 #include "RGBTask.h"
 #include "AppManager.h"
 #include "Tilda.h"
+#include <glcd.h>
+
+App* FlashLightApp::New() {
+    return new FlashLightApp();
+}
 
 FlashLightApp::FlashLightApp()
-    :_lightLevel(8), _buttonSubscription(NULL)
+    :mLightLevel(7)
 {
+    mButtonSubscription = Tilda::createButtonSubscription(UP | DOWN | LEFT | RIGHT);
 
 }
 
-// ToDo: Add all the fancy features from https://github.com/emfcamp/Mk2-Firmware/blob/master/frRGBTask/frRGBTask.ino
+FlashLightApp::~FlashLightApp() {
+    delete mButtonSubscription;
+}
+
+// TODO: Add all the fancy features from https://github.com/emfcamp/Mk2-Firmware/blob/master/frRGBTask/frRGBTask.ino
 String FlashLightApp::getName() const {
     return "FlashLight";
 }
 
 void FlashLightApp::updateLeds() {
-    uint8_t actualLightLevel = 1 << _lightLevel;
-    if (_lightLevel == 8) {
-        actualLightLevel = 255;
+    uint8_t actualLightLevel = 1 << mLightLevel;
+
+    if (Tilda::getOrientation() != ORIENTATION_HUNG) {
+        actualLightLevel = 2;
     }
+
     Tilda::setLedColor({actualLightLevel, actualLightLevel, actualLightLevel});
 }
 
 void FlashLightApp::task() {
-    ButtonSubscription buttonSubscription = Tilda::createButtonSubscription(UP | DOWN);
-    _buttonSubscription = &buttonSubscription;
+    GLCD.SetRotation(ROTATION_90);
+    Tilda::getGUITask().clearRoot();
+    GLCD.DrawBitmap(FLASHLIGHT_XBM ,0, 0);
+
     updateLeds();
     while(true) {
-        Button button = _buttonSubscription->waitForPress(( TickType_t ) 1000);
-        if (button == UP) {
-            if (_lightLevel < 8) {
-                _lightLevel++;
+        Button button = mButtonSubscription->waitForPress(100);
+        if (button == UP || button == LEFT) {
+            if (mLightLevel < 7) {
+                mLightLevel++;
             } else {
-                _lightLevel = 8;
-            }
-            updateLeds();
-        } else if (button == DOWN) {
-            if (_lightLevel > 1) {
-                _lightLevel--;
+                mLightLevel = 7;
+            };
+        } else if (button == DOWN || button == RIGHT) {
+            if (mLightLevel > 1) {
+                mLightLevel--;
             } else {
-                _lightLevel = 0;
+                mLightLevel = 0;
             }
-            updateLeds();
         }
+        updateLeds();
     }
 }
 
@@ -83,9 +96,9 @@ void FlashLightApp::afterSuspension() {
 }
 
 void FlashLightApp::beforeResume() {
-    if (_buttonSubscription) {
+    if (mButtonSubscription) {
         // Clear Button Queue of any up/down button pressed that have occured durind suspension
-        _buttonSubscription->clear();
+        mButtonSubscription->clear();
     }
     updateLeds();
 }
